@@ -1,9 +1,7 @@
-import torch
-import transformers
-
-
 def predict(input_text):
-    device = torch.device("cpu")  
+    errors = 0
+
+    device = torch.device("cpu")
 
     tokenizer = transformers.BertTokenizer.from_pretrained('final_model')
     model = transformers.BertForSequenceClassification.from_pretrained("final_model")
@@ -13,9 +11,10 @@ def predict(input_text):
     chunks = []
     words = input_text.split()
     for i, word in enumerate(words):
-        if word == "there":
-            start = max(0, i-1)
-            end = min(len(words), i+2)
+        if word in ["theyre", "they're", "their", "there"]:
+            center = i
+            start = max(0, center - 3)
+            end = min(len(words), center + 3)
             chunk = " ".join(words[start:end])
             chunks.append(chunk)
 
@@ -34,18 +33,13 @@ def predict(input_text):
         predicted_label_index = torch.argmax(probs, dim=-1).item()
 
         if predicted_label_index == 0:
+            errors +=1
             predictions.append(('their', probs.tolist()[0][predicted_label_index]))
         elif predicted_label_index == 1:
+            errors +=1
             predictions.append(('there', probs.tolist()[0][predicted_label_index]))
         elif predicted_label_index == 2:
+            errors +=1
             predictions.append(("they're", probs.tolist()[0][predicted_label_index]))
 
-    return predictions
-
-
-input_text = input('> ')
-
-predictions = predict(input_text)
-
-for label, prob in predictions:
-    print(f"Predicted label: {label}, Probability: {prob:.5f}")
+    return predictions, errors
