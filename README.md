@@ -3,8 +3,7 @@ Use ai to get the correct usage of the confusing homophones "there", "their", an
 
 
 ## download model
-https://drive.google.com/file/d/1XA0F-QgZrT7vxT_UPYX7j3wIpGNPxo1-/view?usp=sharing
-
+https://drive.google.com/file/d/1cr1tdS-vBi5kYbJKNAWFDqc6C7RfQEMS/view?usp=sharing
 
 ### labels
 0: their
