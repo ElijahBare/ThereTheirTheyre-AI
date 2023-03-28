@@ -3,33 +3,49 @@ import transformers
 
 
 def predict(input_text):
-    device = torch.device("cpu")  # or cuda if you really want... not too necessary unless processing a ton of text
+    device = torch.device("cpu")  
 
-    tokenizer = transformers.BertTokenizer.from_pretrained('bert-base-uncased')
-    model = transformers.BertForSequenceClassification.from_pretrained("their_there_they're")
+    tokenizer = transformers.BertTokenizer.from_pretrained('final_model')
+    model = transformers.BertForSequenceClassification.from_pretrained("final_model")
 
     model.eval()
 
-    tokens = tokenizer.encode_plus(input_text, max_length=128, truncation=True, padding='max_length',
-                                   return_tensors='pt')
+    chunks = []
+    words = input_text.split()
+    for i, word in enumerate(words):
+        if word == "there":
+            start = max(0, i-1)
+            end = min(len(words), i+2)
+            chunk = " ".join(words[start:end])
+            chunks.append(chunk)
 
-    input_ids = tokens['input_ids'].to(device)
-    attention_mask = tokens['attention_mask'].to(device)
+    predictions = []
+    for chunk in chunks:
+        tokens = tokenizer.encode_plus(chunk, max_length=128, truncation=True, padding='max_length',
+                                       return_tensors='pt')
 
-    with torch.no_grad():
-        logits = model(input_ids, attention_mask)
+        input_ids = tokens['input_ids'].to(device)
+        attention_mask = tokens['attention_mask'].to(device)
 
-    probs = torch.softmax(logits[0], dim=-1)
+        with torch.no_grad():
+            logits = model(input_ids, attention_mask)
 
-    predicted_label_index = torch.argmax(probs, dim=-1).item()
+        probs = torch.softmax(logits[0], dim=-1)
+        predicted_label_index = torch.argmax(probs, dim=-1).item()
 
-    if predicted_label_index == 0:
-        return 'their', probs
-    elif predicted_label_index == 1:
-        return 'there', probs
-    elif predicted_label_index == 2:
-        return "they're", probs
+        if predicted_label_index == 0:
+            predictions.append(('their', probs.tolist()[0][predicted_label_index]))
+        elif predicted_label_index == 1:
+            predictions.append(('there', probs.tolist()[0][predicted_label_index]))
+        elif predicted_label_index == 2:
+            predictions.append(("they're", probs.tolist()[0][predicted_label_index]))
+
+    return predictions
 
 
-# Print the predicted label
-print(f"Predicted label: {predict(input_text=input('> '))}")
+input_text = input('> ')
+
+predictions = predict(input_text)
+
+for label, prob in predictions:
+    print(f"Predicted label: {label}, Probability: {prob:.5f}")
